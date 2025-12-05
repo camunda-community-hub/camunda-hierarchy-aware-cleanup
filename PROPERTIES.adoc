@@ -1,0 +1,70 @@
+= camunda-hierarchy-aware-cleanup
+:toc: auto
+:toc-title: Table of Contents
+:toclevels: 4
+
+This POM defines the required plugins and profiles to allow a Camunda Community Hub release build.
+        Inherit this POM when you want to use https://github.com/camunda-community-hub/community-action-maven-release
+
+
+
+// tag::camunda.cleanup[]
+ifndef::property-group-simple-title,property-group-discrete-heading[=== camunda.cleanup +]
+ifdef::property-group-simple-title[.*_camunda.cleanup_* +]
+ifdef::property-group-discrete-heading[]
+[discrete]
+=== camunda.cleanup
+endif::[]
+*Class:* `io.camunda.cleanup.AppProperties`
+[cols="2,1,3,1,1"]
+|===
+|Key |Type |Description |Default value |Deprecation
+
+
+|kill-orphans
+|java.lang.Boolean
+|
+|true
+|
+
+|retention-buffer
+|java.time.Duration
+|
+|P1D
+|
+
+|retention-policy
+|java.time.Duration
+|
+|P30D
+|
+
+
+|===
+// end::camunda.cleanup[]
+
+// tag::camunda.cleanup.audit[]
+ifndef::property-group-simple-title,property-group-discrete-heading[=== camunda.cleanup.audit +]
+ifdef::property-group-simple-title[.*_camunda.cleanup.audit_* +]
+ifdef::property-group-discrete-heading[]
+[discrete]
+=== camunda.cleanup.audit
+endif::[]
+*Class:* `io.camunda.cleanup.AppProperties$Audit`
+[cols="2,1,3,1,1"]
+|===
+|Key |Type |Description |Default value |Deprecation
+
+
+|type
+|io.camunda.cleanup.AppProperties$Audit$Type
+|
+|logging
+|
+
+
+|===
+// end::camunda.cleanup.audit[]
+
+This is a generated file, generated at: *2025-12-05T09:40:22.918472*
+

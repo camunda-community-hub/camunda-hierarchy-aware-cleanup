@@ -4,7 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class LoggingProcessInstanceDeletionAudit implements ProcessInstanceDeletionAudit {
-  private static final Logger LOG = LoggerFactory.getLogger(LoggingProcessInstanceDeletionAudit.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(LoggingProcessInstanceDeletionAudit.class);
 
   @Override
   public void pushPending(DeletedProcessInstance deletedProcessInstance) {

@@ -3,12 +3,11 @@ package io.camunda.cleanup;
 import io.camunda.cleanup.audit.LoggingProcessInstanceDeletionAudit;
 import io.camunda.cleanup.audit.ProcessInstanceDeletionAudit;
 import io.camunda.client.CamundaClient;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 @Configuration
 @EnableConfigurationProperties(AppProperties.class)
@@ -23,17 +22,13 @@ public class AppConfiguration {
   public ProcessInstanceCleanerConfiguration orphanKillerConfiguration(
       final CamundaClient camundaClient,
       final Executor orphanKillerExecutor,
-      final ProcessInstanceDeletionAudit processInstanceDeletionAudit
-  ) {
+      final ProcessInstanceDeletionAudit processInstanceDeletionAudit) {
     return new ProcessInstanceCleanerConfiguration(
         camundaClient,
         orphanKillerExecutor,
-        properties
-            .retentionPolicy()
-            .plus(properties.retentionBuffer()),
+        properties.retentionPolicy().plus(properties.retentionBuffer()),
         properties.killOrphans(),
-        processInstanceDeletionAudit
-    );
+        processInstanceDeletionAudit);
   }
 
   @Bean
@@ -43,9 +38,7 @@ public class AppConfiguration {
 
   @Bean
   public ProcessInstanceDeletionAudit processInstanceDeletionAudit() {
-    return switch (properties
-        .audit()
-        .type()) {
+    return switch (properties.audit().type()) {
       case logging -> new LoggingProcessInstanceDeletionAudit();
     };
   }
