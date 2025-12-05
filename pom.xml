@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.camunda.community</groupId>
+    <artifactId>community-hub-release-parent</artifactId>
+    <version>2.1.0</version>
+  </parent>
   <groupId>io.camunda</groupId>
   <artifactId>camunda-hierarchy-aware-cleanup</artifactId>
   <version>1.0-SNAPSHOT</version>
+  <name>Camunda hierarchy aware cleanup</name>
+  <description>A program to perform process instance data cleanup in hierarchies in Camunda 8.</description>
   <properties>
     <version.java>21</version.java>
     <java.version>${version.java}</java.version>
@@ -12,8 +18,6 @@
     <maven.compiler.target>${version.java}</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <version.spring-boot>3.5.8</version.spring-boot>
-    <plugin.version.spotless-maven-plugin>3.1.0</plugin.version.spotless-maven-plugin>
-    <plugin.version.maven-enforcer-plugin>3.6.2</plugin.version.maven-enforcer-plugin>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -28,6 +32,25 @@
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-bom</artifactId>
         <version>8.9.0-alpha1</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-bom</artifactId>
+        <version>4.33.1</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.google.errorprone</groupId>
+        <artifactId>error_prone_annotations</artifactId>
+        <version>2.45.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava-bom</artifactId>
+        <version>33.5.0-jre</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -77,16 +100,15 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>${plugin.version.spotless-maven-plugin}</version>
+          <version>3.1.0</version>
           <configuration>
             <formats>
               <format>
                 <includes>
-                  <include>*.md</include>
                   <include>.gitignore</include>
                 </includes>
-                <trimTrailingWhitespace/>
-                <endWithNewline/>
+                <trimTrailingWhitespace />
+                <endWithNewline />
                 <indent>
                   <spaces>true</spaces>
                   <spacesPerTab>2</spacesPerTab>
@@ -94,7 +116,7 @@
               </format>
             </formats>
             <java>
-              <googleJavaFormat/>
+              <googleJavaFormat />
             </java>
             <pom>
               <sortPom>
@@ -106,7 +128,7 @@
             </pom>
             <markdown>
               <includes>
-                <include>**/*.md</include>
+                <include>README.md</include>
               </includes>
             </markdown>
           </configuration>
@@ -123,6 +145,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.14.1</version>
           <configuration>
             <compilerArgs>
               <arg>-parameters</arg>
@@ -152,12 +175,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>${plugin.version.maven-enforcer-plugin}</version>
+          <version>3.6.2</version>
           <configuration>
             <rules>
-              <reactorModuleConvergence/>
-              <dependencyConvergence/>
-              <requirePluginVersions/>
+              <reactorModuleConvergence />
+              <dependencyConvergence />
+              <requirePluginVersions />
             </rules>
           </configuration>
           <executions>
@@ -168,9 +191,58 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>org.rodnansol</groupId>
+          <artifactId>spring-configuration-property-documenter-maven-plugin</artifactId>
+          <version>0.7.0</version>
+          <executions>
+            <execution>
+              <id>generate-md-without-deprecation-and-type</id>
+              <goals>
+                <goal>generate-property-document</goal>
+              </goals>
+              <phase>process-classes</phase>
+              <configuration>
+                <type>MARKDOWN</type>
+                <outputFile>${project.basedir}/PROPERTIES.md</outputFile>
+                <markdownCustomization>
+                  <includeUnknownGroup>false</includeUnknownGroup>
+                  <contentCustomization>
+                    <includeType>false</includeType>
+                    <includeDeprecation>false</includeDeprecation>
+                    <includeEnvFormat>true</includeEnvFormat>
+                  </contentCustomization>
+                  <includeGenerationDate>false</includeGenerationDate>
+                </markdownCustomization>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.5.4</version>
+          <configuration>
+            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.21.0</version>
+        </plugin>
       </plugins>
     </pluginManagement>
-    <plugins/>
+    <plugins>
+      <plugin>
+        <groupId>org.rodnansol</groupId>
+        <artifactId>spring-configuration-property-documenter-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+      </plugin>
+    </plugins>
   </build>
   <profiles>
     <!-- profile to auto format -->
@@ -237,6 +309,8 @@
                     <tags>
                       <tag>ghcr.io/camunda-community-hub/camunda-hierarchy-aware-cleanup/runtime:${project.version}</tag>
                       <tag>ghcr.io/camunda-community-hub/camunda-hierarchy-aware-cleanup/runtime:latest</tag>
+                      <tag>camundacommunityhub/camunda-hierarchy-aware-cleanup-runtime:${project.version}</tag>
+                      <tag>camundacommunityhub/camunda-hierarchy-aware-cleanup-runtime:latest</tag>
                     </tags>
                   </image>
                 </configuration>

@@ -7,5 +7,6 @@ public interface ProcessInstanceDeletionAudit {
 
   void pushSuccess(DeletedProcessInstance deletedProcessInstance);
 
-  record DeletedProcessInstance(String processInstanceKey, OffsetDateTime endDate, OffsetDateTime deletionDate) {}
+  record DeletedProcessInstance(
+      String processInstanceKey, OffsetDateTime endDate, OffsetDateTime deletionDate) {}
 }
