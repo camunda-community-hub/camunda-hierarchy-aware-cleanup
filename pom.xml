@@ -105,7 +105,6 @@
             <formats>
               <format>
                 <includes>
-                  <include>*.md</include>
                   <include>.gitignore</include>
                 </includes>
                 <trimTrailingWhitespace />
@@ -129,7 +128,7 @@
             </pom>
             <markdown>
               <includes>
-                <include>**/*.md</include>
+                <include>README.md</include>
               </includes>
             </markdown>
           </configuration>
@@ -211,7 +210,9 @@
                   <contentCustomization>
                     <includeType>false</includeType>
                     <includeDeprecation>false</includeDeprecation>
+                    <includeEnvFormat>true</includeEnvFormat>
                   </contentCustomization>
+                  <includeGenerationDate>false</includeGenerationDate>
                 </markdownCustomization>
               </configuration>
             </execution>
