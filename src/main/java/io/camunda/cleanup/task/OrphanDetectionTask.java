@@ -9,10 +9,9 @@ public record OrphanDetectionTask(ProcessInstance processInstance) implements Ta
     if (!context
         .camundaClient()
         .processInstanceExists(String.valueOf(processInstance.getParentProcessInstanceKey()))) {
-      context.submit(new OrphanProcessInstanceSearchTask(
-          processInstance.getParentProcessInstanceKey(),
-          p -> p.limit(100)
-      ));
+      context.submit(
+          new OrphanProcessInstanceSearchTask(
+              processInstance.getParentProcessInstanceKey(), p -> p.limit(100)));
     }
   }
 }

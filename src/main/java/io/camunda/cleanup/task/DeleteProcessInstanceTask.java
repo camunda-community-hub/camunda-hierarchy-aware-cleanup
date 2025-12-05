@@ -15,15 +15,11 @@ public record DeleteProcessInstanceTask(ProcessInstance processInstance) impleme
     ProcessInstanceDeletionAudit deletionAudit = context.deletionAudit();
     String processInstanceKey = String.valueOf(processInstance.getProcessInstanceKey());
     try {
-      DeletedProcessInstance deletedProcessInstance = new DeletedProcessInstance(
-          processInstanceKey,
-          processInstance.getEndDate(),
-          OffsetDateTime.now()
-      );
+      DeletedProcessInstance deletedProcessInstance =
+          new DeletedProcessInstance(
+              processInstanceKey, processInstance.getEndDate(), OffsetDateTime.now());
       deletionAudit.pushPending(deletedProcessInstance);
-      context
-          .camundaClient()
-          .deleteProcessInstance(processInstanceKey);
+      context.camundaClient().deleteProcessInstance(processInstanceKey);
       deletionAudit.pushSuccess(deletedProcessInstance);
       LOG.debug("Deleted process instance {}", processInstanceKey);
     } catch (final Exception e) {

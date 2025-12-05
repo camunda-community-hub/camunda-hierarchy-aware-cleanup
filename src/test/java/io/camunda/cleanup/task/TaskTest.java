@@ -1,9 +1,14 @@
 package io.camunda.cleanup.task;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import io.camunda.cleanup.CamundaClientFacade;
 import io.camunda.cleanup.audit.ProcessInstanceDeletionAudit;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
+import java.util.List;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,43 +18,22 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-import java.util.function.Consumer;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 public class TaskTest {
-  @Mock
-  ProcessInstance processInstance;
-  @Mock
-  TaskContext taskContext;
-  @Mock
-  CamundaClientFacade camundaClientFacade;
-  @Mock
-  ProcessInstanceDeletionAudit deletionAudit;
-  @Mock
-  SearchResponse<ProcessInstance> searchResponse;
-  @Captor
-  ArgumentCaptor<Task> taskCaptor;
-  @Captor
-  ArgumentCaptor<Consumer<SearchResponse<ProcessInstance>>> searchResponseCaptor;
+  @Mock ProcessInstance processInstance;
+  @Mock TaskContext taskContext;
+  @Mock CamundaClientFacade camundaClientFacade;
+  @Mock ProcessInstanceDeletionAudit deletionAudit;
+  @Mock SearchResponse<ProcessInstance> searchResponse;
+  @Captor ArgumentCaptor<Task> taskCaptor;
+  @Captor ArgumentCaptor<Consumer<SearchResponse<ProcessInstance>>> searchResponseCaptor;
 
   @BeforeEach
   void setup() {
-    lenient()
-        .when(taskContext.camundaClient())
-        .thenReturn(camundaClientFacade);
-    lenient()
-        .when(processInstance.getParentProcessInstanceKey())
-        .thenReturn(123L);
-    lenient()
-        .when(processInstance.getProcessInstanceKey())
-        .thenReturn(1234L);
-    lenient()
-        .when(taskContext.deletionAudit())
-        .thenReturn(deletionAudit);
+    lenient().when(taskContext.camundaClient()).thenReturn(camundaClientFacade);
+    lenient().when(processInstance.getParentProcessInstanceKey()).thenReturn(123L);
+    lenient().when(processInstance.getProcessInstanceKey()).thenReturn(1234L);
+    lenient().when(taskContext.deletionAudit()).thenReturn(deletionAudit);
   }
 
   @Nested
@@ -79,8 +63,8 @@ public class TaskTest {
   class CompletedAndOutdatedRootProcessInstanceHandler {
     @Test
     void shouldSubmitFollowUpTasks() {
-      CompletedAndOutDatedRootProcessInstanceHandlerTask task = new CompletedAndOutDatedRootProcessInstanceHandlerTask(
-          processInstance);
+      CompletedAndOutDatedRootProcessInstanceHandlerTask task =
+          new CompletedAndOutDatedRootProcessInstanceHandlerTask(processInstance);
       task.run(taskContext);
       verify(taskContext, times(2)).submit(taskCaptor.capture());
       List<Task> allValues = taskCaptor.getAllValues();
@@ -114,11 +98,10 @@ public class TaskTest {
       doNothing()
           .when(camundaClientFacade)
           .searchProcessInstance(any(), any(), searchResponseCaptor.capture());
-      OrphanProcessInstanceSearchTask task = new OrphanProcessInstanceSearchTask(135L, p -> p.limit(100));
+      OrphanProcessInstanceSearchTask task =
+          new OrphanProcessInstanceSearchTask(135L, p -> p.limit(100));
       task.run(taskContext);
-      searchResponseCaptor
-          .getValue()
-          .accept(searchResponse);
+      searchResponseCaptor.getValue().accept(searchResponse);
       verify(taskContext, times(3)).submit(taskCaptor.capture());
       List<Task> captorTasks = taskCaptor.getAllValues();
       assertThat(captorTasks).hasSize(3);
