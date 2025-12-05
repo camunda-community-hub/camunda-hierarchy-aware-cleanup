@@ -52,6 +52,9 @@ public class AppConfiguration {
 
   @Bean
   public ProcessInstanceDeletionAudit processInstanceDeletionAudit() {
+    if (properties.audit() == null) {
+      return new LoggingProcessInstanceDeletionAudit();
+    }
     return switch (properties.audit().type()) {
       case logging -> new LoggingProcessInstanceDeletionAudit();
     };
