@@ -1,23 +1,17 @@
 package io.camunda.cleanup;
 
-import io.camunda.cleanup.audit.ProcessInstanceDeletionAudit;
-import io.camunda.cleanup.audit.ProcessInstanceDeletionAudit.DeletedProcessInstance;
-import io.camunda.client.CamundaClient;
+import io.camunda.cleanup.task.CompletedAndOutDatedRootProcessInstanceHandlerTask;
+import io.camunda.cleanup.task.OrphanDetectionTask;
+import io.camunda.cleanup.task.TaskContext;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.classic.methods.HttpDelete;
-import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.ClassicHttpRequest;
-import org.apache.hc.core5.net.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -28,21 +22,16 @@ import org.springframework.stereotype.Component;
 @EnableScheduling
 public class ProcessInstanceCleaner {
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceCleaner.class);
-  private final CamundaClient camundaClient;
-  private final Executor executor;
   private final Duration relaxedRetentionPolicy;
   private final boolean killOrphans;
-  private final ProcessInstanceDeletionAudit deletionAudit;
   private final AtomicReference<String> parentsEndCursor = new AtomicReference<>(null);
   private final AtomicReference<String> orphansEndCursor = new AtomicReference<>(null);
-  private final CloseableHttpClient httpClient = HttpClients.createSystem();
+  private final TaskContext taskContext;
 
   public ProcessInstanceCleaner(final ProcessInstanceCleanerConfiguration configuration) {
-    camundaClient = configuration.camundaClient();
-    executor = configuration.executor();
     relaxedRetentionPolicy = configuration.relaxedRetentionPolicy();
     killOrphans = configuration.killOrphans();
-    this.deletionAudit = configuration.deletionAudit();
+    taskContext = configuration.taskContext();
   }
 
   @Scheduled(fixedDelay = 10000L)
@@ -77,168 +66,57 @@ public class ProcessInstanceCleaner {
     // search for process instances that have a parent, are completed or canceled and already older
     // than expected
     final SearchResponse<ProcessInstance> searchResponse =
-        camundaClient
-            .newProcessInstanceSearchRequest()
-            .filter(
-                f ->
-                    f.parentProcessInstanceKey(l -> l.exists(false))
-                        .state(
-                            s ->
-                                s.in(
-                                    ProcessInstanceState.COMPLETED,
-                                    ProcessInstanceState.TERMINATED))
-                        .endDate(d -> d.lt(OffsetDateTime.now().minus(relaxedRetentionPolicy))))
-            .sort(s -> s.endDate().asc())
-            .page(page)
-            .execute();
+        taskContext
+            .camundaClient()
+            .searchProcessInstance(this::completedAndOutdatedRootProcessInstance, page);
     if (searchResponse.items().isEmpty()) {
       return null;
     } else {
-      searchResponse
-          .items()
-          .forEach(
-              processInstance -> {
-                LOG.debug(
-                    "Handling parent process instance {}", processInstance.getProcessInstanceKey());
-                executor.execute(
-                    () -> treatOrphan(processInstance.getProcessInstanceKey(), p -> p.limit(100)));
-                executor.execute(
-                    () ->
-                        deleteProcessInstance(
-                            String.valueOf(processInstance.getProcessInstanceKey()),
-                            processInstance.getEndDate()));
-              });
+      searchResponse.items().forEach(this::handleCompletedAndOutdatedRootProcessInstance);
       return searchResponse.page().endCursor();
     }
+  }
+
+  private void completedAndOutdatedRootProcessInstance(
+      final ProcessInstanceFilter processInstanceFilter) {
+    completedAndOutdatedProcessInstance(processInstanceFilter, false);
+  }
+
+  private void completedAndOutdatedChildProcessInstance(
+      final ProcessInstanceFilter processInstanceFilter) {
+    completedAndOutdatedProcessInstance(processInstanceFilter, true);
+  }
+
+  private void completedAndOutdatedProcessInstance(
+      final ProcessInstanceFilter processInstanceFilter, boolean hasParent) {
+    processInstanceFilter
+        .parentProcessInstanceKey(l -> l.exists(hasParent))
+        .state(s -> s.in(ProcessInstanceState.COMPLETED, ProcessInstanceState.TERMINATED))
+        .endDate(d -> d.lt(OffsetDateTime.now().minus(relaxedRetentionPolicy)));
+  }
+
+  private void handleCompletedAndOutdatedRootProcessInstance(
+      final ProcessInstance processInstance) {
+    taskContext.submit(new CompletedAndOutDatedRootProcessInstanceHandlerTask(processInstance));
   }
 
   private String findOrphans(final Consumer<SearchRequestPage> page) {
     // search for process instances that have a parent, are completed or canceled and already older
     // than expected
     final SearchResponse<ProcessInstance> searchResponse =
-        camundaClient
-            .newProcessInstanceSearchRequest()
-            .filter(
-                f ->
-                    f.parentProcessInstanceKey(l -> l.exists(true))
-                        .state(
-                            s ->
-                                s.in(
-                                    ProcessInstanceState.COMPLETED,
-                                    ProcessInstanceState.TERMINATED))
-                        .endDate(d -> d.lt(OffsetDateTime.now().minus(relaxedRetentionPolicy))))
-            .sort(s -> s.endDate().asc())
-            .page(page)
-            .execute();
-
+        taskContext
+            .camundaClient()
+            .searchProcessInstance(this::completedAndOutdatedChildProcessInstance, page);
     if (searchResponse.items().isEmpty()) {
       return null;
     } else {
-      searchResponse
-          .items()
-          .forEach(
-              processInstance -> executor.execute(() -> treatPotentialOrphan(processInstance)));
+      searchResponse.items().forEach(this::handleCompletedAndOutdatedChildProcessInstance);
       return searchResponse.page().endCursor();
     }
   }
 
-  private void treatPotentialOrphan(final ProcessInstance processInstance) {
-    camundaClient
-        .newProcessInstanceGetRequest(processInstance.getParentProcessInstanceKey())
-        .send()
-        .exceptionallyAsync(
-            t -> {
-              LOG.debug(
-                  "Detected orphan process instance {}", processInstance.getProcessInstanceKey());
-              treatOrphan(processInstance.getParentProcessInstanceKey(), p -> p.limit(100));
-              return null;
-            },
-            executor);
-  }
-
-  private void treatOrphan(
-      final long parentProcessInstanceKey, final Consumer<SearchRequestPage> page) {
-    camundaClient
-        .newProcessInstanceSearchRequest()
-        .filter(f -> f.parentProcessInstanceKey(parentProcessInstanceKey))
-        .page(page)
-        .send()
-        .thenAcceptAsync(
-            r -> {
-              if (!r.items().isEmpty()) {
-                executor.execute(
-                    () ->
-                        treatOrphan(
-                            parentProcessInstanceKey,
-                            p -> p.limit(100).after(r.page().endCursor())));
-                r.items()
-                    .forEach(
-                        processInstance -> {
-                          executor.execute(
-                              () ->
-                                  findDecisionInstances(
-                                      processInstance.getProcessInstanceKey(), p -> p.limit(100)));
-                          executor.execute(
-                              () ->
-                                  treatOrphan(
-                                      processInstance.getProcessInstanceKey(), p -> p.limit(100)));
-                          executor.execute(
-                              () ->
-                                  deleteProcessInstance(
-                                      String.valueOf(processInstance.getProcessInstanceKey()),
-                                      processInstance.getEndDate()));
-                        });
-              }
-            },
-            executor);
-  }
-
-  private void findDecisionInstances(
-      final long processInstanceKey, final Consumer<SearchRequestPage> page) {
-    camundaClient
-        .newDecisionInstanceSearchRequest()
-        .filter(f -> f.processInstanceKey(processInstanceKey))
-        .page(page)
-        .send()
-        .thenAcceptAsync(
-            r -> {
-              if (!r.items().isEmpty()) {
-                executor.execute(
-                    () ->
-                        findDecisionInstances(
-                            processInstanceKey, p -> p.limit(100).after(r.page().endCursor())));
-              }
-              r.items()
-                  .forEach(
-                      decisionInstance -> {
-                        executor.execute(
-                            () ->
-                                deleteDecisionInstance(
-                                    decisionInstance.getDecisionInstanceId(),
-                                    decisionInstance.getEvaluationDate()));
-                      });
-            });
-  }
-
-  private void deleteDecisionInstance(
-      final String decisionInstanceId, OffsetDateTime evaluationDate) {}
-
-  private void deleteProcessInstance(final String processInstanceKey, OffsetDateTime endDate) {
-    try {
-      final ClassicHttpRequest r =
-          new HttpDelete(
-              new URIBuilder(camundaClient.getConfiguration().getRestAddress())
-                  .appendPathSegments("v1", "process-instances", processInstanceKey)
-                  .build());
-      camundaClient.getConfiguration().getCredentialsProvider().applyCredentials(r::setHeader);
-      DeletedProcessInstance deletedProcessInstance =
-          new DeletedProcessInstance(processInstanceKey, endDate, OffsetDateTime.now());
-      deletionAudit.pushPending(deletedProcessInstance);
-      httpClient.execute(r, new BasicHttpClientResponseHandler());
-      deletionAudit.pushSuccess(deletedProcessInstance);
-      LOG.debug("Deleted process instance {}", processInstanceKey);
-    } catch (final Exception e) {
-      LOG.warn("Could not delete process instance {}", processInstanceKey, e);
-    }
+  private void handleCompletedAndOutdatedChildProcessInstance(
+      final ProcessInstance processInstance) {
+    taskContext.submit(new OrphanDetectionTask(processInstance));
   }
 }
