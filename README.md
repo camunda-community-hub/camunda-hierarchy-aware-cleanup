@@ -20,6 +20,6 @@ Here, the side effect could happen that other "orphans" that had appeared in the
 
 ## How do I configure it?
 
-The application comes with a set of properties that can be reviewed [here](./PROPERTIES.adoc).
+The application comes with a set of properties that can be reviewed [here](./PROPERTIES.md).
 
 Apart from that, the connection to Camunda is configured as outlined [here](https://docs.camunda.io/docs/apis-tools/camunda-spring-boot-starter/configuration/).
