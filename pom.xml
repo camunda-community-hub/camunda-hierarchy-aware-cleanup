@@ -195,7 +195,7 @@
         <plugin>
           <groupId>org.rodnansol</groupId>
           <artifactId>spring-configuration-property-documenter-maven-plugin</artifactId>
-          <version>0.7.0</version>
+          <version>0.7.2</version>
           <executions>
             <execution>
               <id>generate-md-without-deprecation-and-type</id>
