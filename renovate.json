@@ -1,0 +1,46 @@
+{
+  "extends": [
+    "config:recommended",
+    "schedule:automergeNonOfficeHours"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "packageRules": [
+    {
+      "description": "Never update own dependencies",
+      "enabled": false,
+      "matchPackageNames": [
+        "io.camunda:camunda-hierarchy-aware-cleanup*{/,}**"
+      ]
+    },
+    {
+      "description": "Never update camunda dependencies minor and major after a release",
+      "matchPackageNames": [
+        "io.camunda:*{/,}**"
+      ],
+      "matchBaseBranches": [
+        "/^release/.*/"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "enabled": false
+    },
+    {
+      "matchManagers": [
+        "maven"
+      ],
+      "description": "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
+      "allowedVersions": "!/-SNAPSHOT$/",
+      "matchPackageNames": [
+        "/.*/"
+      ]
+    }
+  ],
+  "baseBranchPatterns": [
+    "main",
+    "/^release/.*/"
+  ]
+}
