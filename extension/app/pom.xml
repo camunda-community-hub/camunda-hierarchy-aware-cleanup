@@ -8,6 +8,7 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>camunda-hierarchy-aware-cleanup-app</artifactId>
+  <name>Camunda hierarchy aware cleanup app</name>
   <properties>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>

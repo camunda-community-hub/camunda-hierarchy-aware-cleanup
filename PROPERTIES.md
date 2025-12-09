@@ -1,4 +1,4 @@
-# camunda-hierarchy-aware-cleanup-spring-boot-starter
+# Camunda hierarchy aware cleanup spring boot starter
 A program to perform process instance data cleanup in hierarchies in Camunda 8.
 ## Table of Contents
 * [**camunda.cleanup** - `io.camunda.cleanup.AppProperties`](#camunda.cleanup)
