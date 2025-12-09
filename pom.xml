@@ -193,7 +193,7 @@
               <phase>process-classes</phase>
               <configuration>
                 <type>MARKDOWN</type>
-                <outputFile>${project.basedir}/PROPERTIES.md</outputFile>
+                <outputFile>${project.basedir}/../../PROPERTIES.md</outputFile>
                 <markdownCustomization>
                   <includeUnknownGroup>false</includeUnknownGroup>
                   <contentCustomization>
