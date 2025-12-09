@@ -9,8 +9,13 @@
   <groupId>io.camunda</groupId>
   <artifactId>camunda-hierarchy-aware-cleanup</artifactId>
   <version>1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
   <name>Camunda hierarchy aware cleanup</name>
   <description>A program to perform process instance data cleanup in hierarchies in Camunda 8.</description>
+  <modules>
+    <module>extension/spring-boot-starter</module>
+    <module>extension/app</module>
+  </modules>
   <properties>
     <version.java>21</version.java>
     <java.version>${version.java}</java.version>
@@ -54,47 +59,13 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-hierarchy-aware-cleanup-spring-boot-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
-  <dependencies>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-spring-boot-starter</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents.core5</groupId>
-      <artifactId>httpcore5</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-autoconfigure</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-client-java</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents.client5</groupId>
-      <artifactId>httpclient5</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
   <build>
     <pluginManagement>
       <plugins>
@@ -137,11 +108,28 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
+          <version>3.9.0</version>
           <configuration>
-            <ignoredUnusedDeclaredDependencies>
+            <ignoredDependencies>
               <dependency>io.camunda:camunda-spring-boot-starter</dependency>
-            </ignoredUnusedDeclaredDependencies>
+              <dependency>org.springframework.boot:spring-boot-starter</dependency>
+              <dependency>io.camunda:camunda-hierarchy-aware-cleanup-spring-boot-starter</dependency>
+              <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
+              <dependency>org.springframework:spring-beans</dependency>
+            </ignoredDependencies>
+            <outputXML>true</outputXML>
           </configuration>
+          <executions>
+            <execution>
+              <id>analyze</id>
+              <goals>
+                <goal>analyze-only</goal>
+              </goals>
+              <configuration>
+                <failOnWarning>true</failOnWarning>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -236,12 +224,12 @@
     </pluginManagement>
     <plugins>
       <plugin>
-        <groupId>org.rodnansol</groupId>
-        <artifactId>spring-configuration-property-documenter-maven-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
+        <artifactId>maven-dependency-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
@@ -285,36 +273,6 @@
                   <goal>check</goal>
                 </goals>
                 <phase>validate</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>buildImage</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>build-version</id>
-                <goals>
-                  <goal>build-image-no-fork</goal>
-                </goals>
-                <phase>package</phase>
-                <configuration>
-                  <image>
-                    <tags>
-                      <tag>ghcr.io/camunda-community-hub/camunda-hierarchy-aware-cleanup/runtime:${project.version}</tag>
-                      <tag>ghcr.io/camunda-community-hub/camunda-hierarchy-aware-cleanup/runtime:latest</tag>
-                      <tag>camundacommunityhub/camunda-hierarchy-aware-cleanup-runtime:${project.version}</tag>
-                      <tag>camundacommunityhub/camunda-hierarchy-aware-cleanup-runtime:latest</tag>
-                    </tags>
-                  </image>
-                </configuration>
               </execution>
             </executions>
           </plugin>
