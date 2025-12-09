@@ -14,12 +14,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 
-@Component
-@EnableScheduling
 public class ProcessInstanceCleaner {
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceCleaner.class);
   private final Duration relaxedRetentionPolicy;

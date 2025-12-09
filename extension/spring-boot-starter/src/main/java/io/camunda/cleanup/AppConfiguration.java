@@ -1,5 +1,6 @@
 package io.camunda.cleanup;
 
+import io.camunda.cleanup.AppProperties.Audit.Type;
 import io.camunda.cleanup.audit.LoggingProcessInstanceDeletionAudit;
 import io.camunda.cleanup.audit.ProcessInstanceDeletionAudit;
 import io.camunda.cleanup.task.TaskContext;
@@ -8,17 +9,30 @@ import io.camunda.client.CamundaClient;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
 @EnableConfigurationProperties(AppProperties.class)
+@EnableScheduling
 public class AppConfiguration {
+  private static final Logger LOG = LoggerFactory.getLogger(AppConfiguration.class);
+
   private final AppProperties properties;
 
   public AppConfiguration(final AppProperties properties) {
+    LOG.info("Configuring hierarchy aware cleanup");
     this.properties = properties;
+  }
+
+  @Bean
+  public ProcessInstanceCleaner processInstanceCleaner(
+      ProcessInstanceCleanerConfiguration configuration) {
+    return new ProcessInstanceCleaner(configuration);
   }
 
   @Bean
@@ -56,7 +70,7 @@ public class AppConfiguration {
       return new LoggingProcessInstanceDeletionAudit();
     }
     return switch (properties.audit().type()) {
-      case logging -> new LoggingProcessInstanceDeletionAudit();
+      case Type.logging -> new LoggingProcessInstanceDeletionAudit();
     };
   }
 }
