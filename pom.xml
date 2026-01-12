@@ -22,7 +22,7 @@
     <maven.compiler.source>${version.java}</maven.compiler.source>
     <maven.compiler.target>${version.java}</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <version.spring-boot>3.5.9</version.spring-boot>
+    <version.spring-boot>4.0.1</version.spring-boot>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -36,7 +36,7 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-bom</artifactId>
-        <version>8.9.0-alpha2</version>
+        <version>8.9.0-alpha3</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
